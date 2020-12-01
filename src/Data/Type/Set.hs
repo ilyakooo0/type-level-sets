@@ -9,7 +9,6 @@ module Data.Type.Set (Set(..), Union, Unionable, union, quicksort, append,
                       Delete(..), Proxy(..), remove, Remove, (:\),
                       Member(..), NonMember, MemberP(..)) where
 
-import GHC.TypeLits
 import Data.Type.Bool
 import Data.Type.Equality
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE FunctionalDependencies #-}
 {- This module provides type-level finite maps.
 The implementation is similar to that shown in the paper.
  "Embedding effect systems in Haskell" Orchard, Petricek 2014  -}
@@ -5,7 +6,7 @@ The implementation is similar to that shown in the paper.
 {-# LANGUAGE TypeOperators, PolyKinds, DataKinds, KindSignatures,
              TypeFamilies, UndecidableInstances, MultiParamTypeClasses,
              FlexibleInstances, GADTs, FlexibleContexts, ScopedTypeVariables,
-             ConstraintKinds, IncoherentInstances #-}
+             ConstraintKinds #-}
 
 module Data.Type.Map (Mapping(..), Union, Unionable, union, Var(..), Map(..),
                       Combine, Combinable(..), Cmp,
@@ -76,15 +77,21 @@ data Map (n :: [Mapping Symbol *]) where
     Empty :: Map '[]
     Ext :: Var k -> v -> Map m -> Map ((k :-> v) ': m)
 
+type IsMember v t m = IsMember' v t m (IsMemberEq v m)
+
+type family IsMemberEq x y where
+  IsMemberEq x ((x :-> _) ': _) = True
+  IsMemberEq _ _ = False
+
 {-| Membership test a type class (predicate) -}
-class IsMember v t m where
+class (IsMemberEq v m ~ f) => IsMember' v t m f | v m -> t where
   {-| Value-level lookup of elements from a map, via type class predicate -}
   lookp :: Var v -> Map m -> t
 
-instance {-# OVERLAPS #-} IsMember v t ((v ':-> t) ': m) where
+instance IsMember' v t ((v ':-> t) ': m) True where
   lookp _ (Ext _ x _) = x
 
-instance {-# OVERLAPPABLE #-} IsMember v t m => IsMember v t (x ': m) where
+instance (IsMember' v t m u, IsMemberEq v (x ': m) ~ False) => IsMember' v t (x ': m) False where
   lookp v (Ext _ _ m) = lookp v m
 
 
