@@ -255,14 +255,20 @@ instance {-# OVERLAPS #-} (Split s t st) => Split s (x ': t) (x ': st) where
                         in  (s, Ext k v t)
 
 {-| Construct a submap 's' from a supermap 't' -}
-class Submap s t where
+type Submap x y = Submap' x y (SubmapEq x y)
+
+type family SubmapEq x y where
+  SubmapEq (x ': _) (x ': _) = True
+  SubmapEq _ _ = False
+
+class SubmapEq s t ~ f => Submap' s t f where
    submap :: Map t -> Map s
 
-instance Submap '[] '[] where
+instance Submap' '[] '[] False where
    submap xs = Empty
 
-instance {-# OVERLAPPABLE #-} Submap s t => Submap s (x ': t) where
+instance (Submap' s t u, SubmapEq s (x ': t) ~ False) => Submap' s (x ': t) False where
    submap (Ext _ _ xs) = submap xs
 
-instance {-# OVERLAPS #-} Submap s t => Submap  (x ': s) (x ': t) where
+instance Submap' s t u => Submap'  (x ': s) (x ': t) True where
    submap (Ext k v xs) = Ext k v (submap xs)
